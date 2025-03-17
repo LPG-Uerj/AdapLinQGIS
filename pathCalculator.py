@@ -1,12 +1,12 @@
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 from qgis.gui import *
 import numpy as np
 from math import sqrt
 import collections
 
-from utils import *
+from .utils import *
 
 
 class pathCalculator():
@@ -18,8 +18,48 @@ class pathCalculator():
         self.bandas = bandas
         
    
+    
+    
+    def _debug_plot_graph(self, grafo):
+        # Display graph as point layer for debug
+        camada_memoria = QgsVectorLayer(f"Point?crs={self.camada_raster.crs().authid()}&field=id:integer", "grafo pontos", "memory")
+        
+        provedor = camada_memoria.dataProvider()
+        for lista_ponto in grafo:
+            for ponto in lista_ponto:
+                feicao = QgsFeature()
+                feicao.setGeometry(QgsGeometry.fromPointXY(ponto))
+                feicao.setAttributes([1])
+                provedor.addFeatures([feicao])
+                
+                
+        # camada_memoria.commitChanges()
+        # camada_memoria.updateExtents()
+                
+        QgsProject.instance().addMapLayers([camada_memoria])
+
+    def _debug_plot_result(self, result):
+        # Display graph as point layer for debug
+        camada_memoria = QgsVectorLayer(f"Point?crs={self.camada_raster.crs().authid()}&field=id:integer", "resultado grafo", "memory")
+        
+        provedor = camada_memoria.dataProvider()
+        for ponto in result:
+            feicao = QgsFeature()
+            feicao.setGeometry(QgsGeometry.fromPointXY(ponto))
+            feicao.setAttributes([1])
+            provedor.addFeatures([feicao])
+                
+                
+        # camada_memoria.commitChanges()
+        # camada_memoria.updateExtents()
+                
+        QgsProject.instance().addMapLayers([camada_memoria])        
+
+    
     # Interpolate 2 points between the segment traced by the user
-    def interpolation(self, points):
+    def interpolate(self, points):
+        #print('----Início da Interpolação----')
+    
         # Here the graph is represented by a list of lists of QgsPoint
         grafo = []                               
         
@@ -28,15 +68,21 @@ class pathCalculator():
         # If there is 1 point, we will not interpolate  
         #if npoints == 1: return [QgsPoint(1,1), points[0]], grafo, [], None
         
-        if npoints == 1: return [QgsPoint(1,1), points[0]]
+        if npoints == 1: 
+            #print('Término da Interpolação, pois só tem 1 ponto. npoints = ', npoints)
+            return [QgsPoint(1,1), points[0]]
         
+        
+        #print('Formação do Grafo')
         # Loop in the points presented in the segment to interpolate (here npoints always will be 2, but this is designed to work even if it is passed a poliline)
         for i in range(0, npoints-1):
+            #print('i igual a 0 (ponto inicial) ou 1 (ponto final). i = ', i)
             # Try to add the perpendicular lines (formed by QgsPoints) to the segment, in order to do the interpolation
             # If points are out of raster bounds or other exception occurs, we don't interpolate
             try:
                 retas_perpendiculares = self.calculate_line(points[i], points[i+1])
-            except:
+            except Exception as e:
+                #print('Exceção foi ', e)
                 #return points, grafo, [], []
                 return points
             
@@ -44,10 +90,17 @@ class pathCalculator():
             grafo.extend(retas_perpendiculares)
         
         grafo.append([points[-1]])
-
+        
+        # Plota gráfico na tela para debug
+        #self._debug_plot_graph(grafo)
+        
+        # Acha caminho
         result, p = self.find_path(grafo, points)
         
         #return result, grafo, retas_perpendiculares, result
+        #print('Resultado da interpolação é ', result)
+        
+        #self._debug_plot_result(result)
         
         return result
     
@@ -101,7 +154,7 @@ class pathCalculator():
             lista_de_x = [coord_x_sobre[i]] + x_acima + x_abaixo
             lista_de_y = [coord_y_sobre[i]] + y_acima + y_abaixo
         
-            lista_pontos_perpendiculares = [QgsPoint(lista_de_x[j], lista_de_y[j]) for j in range(len(lista_de_x))]
+            lista_pontos_perpendiculares = [QgsPointXY(lista_de_x[j], lista_de_y[j]) for j in range(len(lista_de_x))]
 
             retas_perpendiculares.append(lista_pontos_perpendiculares)
         
@@ -150,7 +203,7 @@ class pathCalculator():
         # We have to transform the point to the raster projection
         mapCanvasSrs = self.iface.mapCanvas().mapSettings().destinationCrs()
         rasterSrs = raster.crs()
-        srsTransform = QgsCoordinateTransform(mapCanvasSrs, rasterSrs)
+        srsTransform = QgsCoordinateTransform(mapCanvasSrs, rasterSrs, QgsProject.instance())
         
         ponto_transform = srsTransform.transform(ponto)
         ponto_valor = provedor.identify(ponto_transform, QgsRaster.IdentifyFormatValue).results()
@@ -162,9 +215,11 @@ class pathCalculator():
         
         return ponto_media        
     
+ 
+    
     # This function gives the best path in a graph considering the objective function that takes in consideration the properties Prop1, Prop2 and Prop3 
     def find_path(self, grafo, points):
-        
+        #print('----Início da função que Acha Caminho----')
         
         def maximum(dic):
             for elem in dic:
@@ -173,16 +228,19 @@ class pathCalculator():
                 if dic[elem] == dic['MAX']:
                     return elem
                     
-                    
+        # We begin with an empty list of dictionaries            
         lista_dic = []
         lista_dic.append({})
         
-        no_inicial = grafo[0][0]                                                                                              
+        no_inicial = grafo[0][0]
+        #print('Nó inicial = ', no_inicial, type(no_inicial))
         
+        # Dictionaries list with the first edges of the graph
         for no in grafo[1]:
+            # lista_dic[0][(frozenset(no_inicial), frozenset(no))] = {'MAX': 0} #lista_dic[0][frozenset(no_inicial, no)] = {'MAX': 0}
             lista_dic[0][(no_inicial, no)] = {'MAX': 0} 
         
-        
+        # Use dynamic programming to calculate the MAX cost of the paths from the initial to the final vertex
         for i in range(len(grafo)):
             g = grafo[i]
 
@@ -204,10 +262,11 @@ class pathCalculator():
                     for z in range(len(g)):
                         no_atual = g[z] 
                         
-                        
+   
                         try:                                            
                             res_parcial = lista_dic[i][(no_atual, no_k_mais_um)]['MAX'] + (self.Prop1(no_atual, no_k_mais_um, no_k_mais_dois) - self.Prop2(no_atual, no_k_mais_um, no_k_mais_dois))*self.Prop3(no_atual, no_k_mais_um, no_k_mais_dois)
-                        except:
+                        except Exception as e:
+                            #print('Exceção foi ', e)
                             return points, points                             
                         
                         lista_dic[i+1][(no_k_mais_um, no_k_mais_dois)][no_atual] = res_parcial
@@ -219,7 +278,7 @@ class pathCalculator():
         lista_dic_inv = lista_dic[-1:0:-1] 
         prima = lista_dic_inv[0]
         
-        ultimos, f_acum, no_escolhido = max([(chave, valor['MAX'], maximum(valor)) for chave, valor in prima.iteritems()], key = lambda par_facum: par_facum[1])
+        ultimos, f_acum, no_escolhido = max([(chave, valor['MAX'], maximum(valor)) for chave, valor in prima.items()], key = lambda par_facum: par_facum[1])
         no_anterior, no_posterior = ultimos 
     
         caminho = []

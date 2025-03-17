@@ -1,15 +1,15 @@
 import sys
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 from qgis.gui import *
 import qgis.utils
 from qgis.core.contextmanagers import qgisapp
 
-from settingsModel import settingsModel
-from settingsView import settingsView
+from .settingsModel import settingsModel
+from .settingsView import settingsView
 
-from utils import *
+from .utils import *
 
 class settingsControl(object):
 	"""docstring for settingsControl"""

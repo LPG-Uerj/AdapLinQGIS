@@ -1,11 +1,11 @@
 import sys
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 
-from utils import *
+from .utils import *
 
-from settings_dialog import SettingsDialog
+from .settings_dialog import SettingsDialog
 
 class settingsView(SettingsDialog):
 	"""docstring for settingsView"""

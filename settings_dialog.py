@@ -5,13 +5,13 @@ Dialog imported from ui_settingsdialog.ui file
 
 import os
 
-from PyQt4 import QtGui, uic
+from PyQt5 import QtWidgets, uic
 
 
 FORM_CLASS, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__), 'ui_settingsdialog.ui'))
 
 
-class SettingsDialog(QtGui.QDialog, FORM_CLASS):
+class SettingsDialog(QtWidgets.QDialog, FORM_CLASS):
     def __init__(self, parent=None):
         """Constructor."""
         super(SettingsDialog, self).__init__(parent)

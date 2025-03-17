@@ -8,11 +8,11 @@
 
 [general]
 name=Adaplin Tool
-qgisMinimumVersion=2.0
+qgisMinimumVersion=3.0
 description=Do the semiautomatic vectorization of a road based on a raster. Faz a vetorização semiautomática de uma estrada com base em um raster.
             
                
-version=0.3
+version=0.4
 author=Marcel Rotunno, Guilherme Abelha and Pedro Ceccopieri
 email=adaplintool@gmail.com
 

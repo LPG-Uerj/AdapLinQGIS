@@ -2,13 +2,13 @@
 
 import os
 
-from PyQt4 import QtGui, uic
-from PyQt4.QtCore import *
+from PyQt5 import QtWidgets, uic
+from PyQt5.QtCore import *
 
 FORM_CLASS, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__), 'ui_compositedialog.ui'))
 
 
-class CompositeDialog(QtGui.QDialog, FORM_CLASS):
+class CompositeDialog(QtWidgets.QDialog, FORM_CLASS):
     def __init__(self, parent=None):
         """Constructor."""
         super(CompositeDialog, self).__init__(parent)

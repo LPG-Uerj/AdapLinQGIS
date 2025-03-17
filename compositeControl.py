@@ -1,13 +1,13 @@
 import sys
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 from qgis.gui import *
 import qgis.utils
 from qgis.core.contextmanagers import qgisapp
 
-from compositeModel import compositeModel
-from compositeView import compositeView
+from .compositeModel import compositeModel
+from .compositeView import compositeView
 
 class compositeControl():
 	"""docstring for compositeControl"""
@@ -26,7 +26,7 @@ class compositeControl():
 
 		RasterExists = self.model.parseRasterLayers()
 
-		if not (RasterExists): return 0
+		if not (RasterExists): return 0 # Retornar um touple (0,0,0) #
 
 		self.view.setLayersCombo(self.model.getRasterNamesList())
 		self.view.setBandsCombos(self.model.parseRasterBands(self.view.getLayerIndex()))
